@@ -52,11 +52,18 @@ public class terminal extends JFrame {
 
         inputField.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 60, 60)));
 
+        // Handle Enter key
         inputField.addActionListener(e -> {
             String cmd = inputField.getText().trim();
             inputField.setText("");
-            addText("> " + cmd + "\n", normalStyle);
+
+            String prompt = userName + "@j9:~$ ";
+            addText(prompt + cmd + "\n", normalStyle);
+
             runCommand(cmd);
+
+            // print prompt again after command finishes
+            addText(prompt, normalStyle);
         });
 
         add(scrollPane, BorderLayout.CENTER);
@@ -65,6 +72,9 @@ public class terminal extends JFrame {
         addText("J9 Terminal\n", normalStyle);
         addText("----------------------\n", normalStyle);
         addText("Welcome back, " + userName + "!\n\n", normalStyle);
+
+        // Initial prompt
+        addText(userName + "@j9:~$ ", normalStyle);
     }
 
     // Load username from %appdata%\J9 Terminal
@@ -84,7 +94,7 @@ public class terminal extends JFrame {
                 userName = JOptionPane.showInputDialog(this, "Enter your name:", "J9 Terminal Setup", JOptionPane.PLAIN_MESSAGE);
 
                 if (userName == null || userName.trim().isEmpty())
-                    userName = "User";
+                    userName = "user";
 
                 FileWriter fw = new FileWriter(file);
                 fw.write(userName);
@@ -92,7 +102,7 @@ public class terminal extends JFrame {
             }
 
         } catch (Exception e) {
-            userName = "User";
+            userName = "user";
         }
     }
 
