@@ -9,9 +9,8 @@ public class terminal extends JFrame {
     private JTextPane outputPane;
     private JTextField inputField;
 
-    private SimpleAttributeSet outputStyle;
+    private SimpleAttributeSet normalStyle;
     private SimpleAttributeSet errorStyle;
-    private SimpleAttributeSet inputStyle;
 
     public terminal() {
         setTitle("J9 Terminal");
@@ -20,26 +19,21 @@ public class terminal extends JFrame {
         setLocationRelativeTo(null);
 
         // ---- Styles ----
-        outputStyle = new SimpleAttributeSet();
-        StyleConstants.setForeground(outputStyle, Color.GREEN);
-        StyleConstants.setFontFamily(outputStyle, "Consolas");
-        StyleConstants.setFontSize(outputStyle, 14);
+        normalStyle = new SimpleAttributeSet();
+        StyleConstants.setForeground(normalStyle, Color.WHITE);
+        StyleConstants.setFontFamily(normalStyle, "Consolas");
+        StyleConstants.setFontSize(normalStyle, 14);
 
         errorStyle = new SimpleAttributeSet();
-        StyleConstants.setForeground(errorStyle, Color.RED);
+        StyleConstants.setForeground(errorStyle, new Color(255, 120, 120));
         StyleConstants.setFontFamily(errorStyle, "Consolas");
         StyleConstants.setFontSize(errorStyle, 14);
-
-        inputStyle = new SimpleAttributeSet();
-        StyleConstants.setForeground(inputStyle, Color.GREEN);
-        StyleConstants.setFontFamily(inputStyle, "Consolas");
-        StyleConstants.setFontSize(inputStyle, 14);
 
         // ---- Terminal Output Panel ----
         outputPane = new JTextPane();
         outputPane.setEditable(false);
         outputPane.setBackground(Color.BLACK);
-        outputPane.setCaretColor(Color.GREEN);  // blinking cursor
+        outputPane.setCaretColor(Color.WHITE);
         outputPane.setFont(new Font("Consolas", Font.PLAIN, 14));
 
         JScrollPane scrollPane = new JScrollPane(outputPane);
@@ -48,25 +42,25 @@ public class terminal extends JFrame {
         inputField = new JTextField();
         inputField.setFont(new Font("Consolas", Font.PLAIN, 14));
         inputField.setBackground(Color.BLACK);
-        inputField.setForeground(Color.GREEN);
-        inputField.setCaretColor(Color.GREEN);   // cursor color
+        inputField.setForeground(Color.WHITE);
+        inputField.setCaretColor(Color.WHITE);
 
-        // Box cursor (fake) by drawing a custom border
-        inputField.setBorder(BorderFactory.createLineBorder(new Color(0, 255, 0), 1));
+        // Simple border like CMD
+        inputField.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 60, 60)));
 
         // Handle Enter key
         inputField.addActionListener(e -> {
             String cmd = inputField.getText().trim();
             inputField.setText("");
-            addText("J9> " + cmd + "\n", outputStyle);
+            addText("> " + cmd + "\n", normalStyle);
             runCommand(cmd);
         });
 
         add(scrollPane, BorderLayout.CENTER);
         add(inputField, BorderLayout.SOUTH);
 
-        addText("=== J9 Terminal (GUI CMD-Style) ===\n", outputStyle);
-        addText("Type commands. Type 'exit' to quit.\n\n", outputStyle);
+        addText("J9 Terminal\n", normalStyle);
+        addText("-----------------------\n\n", normalStyle);
     }
 
     private void addText(String text, AttributeSet style) {
@@ -80,8 +74,13 @@ public class terminal extends JFrame {
     private void runCommand(String cmd) {
 
         if (cmd.equalsIgnoreCase("exit")) {
-            addText("\nClosing terminal...\n", outputStyle);
+            addText("\nExiting...\n", normalStyle);
             System.exit(0);
+        }
+
+        if (cmd.equalsIgnoreCase("clear") || cmd.equalsIgnoreCase("cls")) {
+            outputPane.setText("");
+            return;
         }
 
         try {
@@ -96,15 +95,15 @@ public class terminal extends JFrame {
             String line;
 
             while ((line = stdout.readLine()) != null) {
-                addText(line + "\n", outputStyle);
+                addText(line + "\n", normalStyle);
             }
 
             while ((line = stderr.readLine()) != null) {
-                addText("ERR: " + line + "\n", errorStyle);
+                addText(line + "\n", errorStyle);
             }
 
         } catch (IOException e) {
-            addText("Error: " + e.getMessage() + "\n", errorStyle);
+            addText("Command not found: " + cmd + "\n", errorStyle);
         }
     }
 
