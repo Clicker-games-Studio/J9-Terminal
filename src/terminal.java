@@ -103,15 +103,17 @@ public class terminal extends JFrame {
 
     private void processCommand(String cmd) {
 
-        // Show only user command (NO extra prompt)
+        // Display user input
         print(cmd);
 
         switch (cmd.toLowerCase()) {
             case "help":
                 print("J9 Terminal Commands:");
-                print("  help      - Show this help");
-                print("  clear     - Clear the screen");
-                print("  exit      - Close J9 Terminal");
+                print("  help           - Show this help");
+                print("  clear          - Clear the screen");
+                print("  exit           - Close J9 Terminal");
+                print("  j9 --version   - Show J9 Terminal version");
+                print("  j9 restart     - Restart J9 Terminal");
                 break;
 
             case "clear":
@@ -120,6 +122,14 @@ public class terminal extends JFrame {
 
             case "exit":
                 System.exit(0);
+                break;
+
+            case "j9 --version":
+                print("J9 Terminal version 1.0.0");
+                break;
+
+            case "j9 restart":
+                restartTerminal();
                 break;
 
             case "":
@@ -131,6 +141,29 @@ public class terminal extends JFrame {
         }
 
         printPrompt();
+    }
+
+    private void restartTerminal() {
+        try {
+            // Get java binary and classpath
+            String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+            File currentJar = new File(terminal.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI());
+
+            // If running from JAR, restart it
+            if(currentJar.getName().endsWith(".jar")) {
+                ProcessBuilder builder = new ProcessBuilder(javaBin, "-jar", currentJar.getPath());
+                builder.start();
+            } else {
+                // If running from IDE or class files, restart using class name
+                String classPath = System.getProperty("java.class.path");
+                ProcessBuilder builder = new ProcessBuilder(javaBin, "-cp", classPath, terminal.class.getName());
+                builder.start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.exit(0);
     }
 
     public static void main(String[] args) {
