@@ -37,10 +37,9 @@ public class terminal extends JFrame {
         inputField.setCaretColor(fg);
         inputField.setFont(font);
 
-        // Load username or ask
+        // Load or ask for username
         loadOrCreateUser();
 
-        // Enter key = process command
         inputField.addActionListener(e -> {
             String cmd = inputField.getText().trim();
             inputField.setText("");
@@ -50,7 +49,6 @@ public class terminal extends JFrame {
         add(scroll, BorderLayout.CENTER);
         add(inputField, BorderLayout.SOUTH);
 
-        // Intro
         print("J9 Terminal");
         print("----------------------");
         print("Welcome back, " + username + "!");
@@ -73,18 +71,15 @@ public class terminal extends JFrame {
         configFile = new File(configFolder, "config.txt");
 
         try {
-            if (!configFolder.exists()) {
-                configFolder.mkdirs();
-            }
+            if (!configFolder.exists()) configFolder.mkdirs();
 
             if (!configFile.exists()) {
-                // Ask for username
                 username = JOptionPane.showInputDialog(null,
                         "Enter your username:",
                         "J9 Terminal Setup",
                         JOptionPane.QUESTION_MESSAGE);
 
-                if (username == null || username.isBlank()) {
+                if (username == null || username.trim().isEmpty()) {
                     username = "User";
                 }
 
@@ -95,7 +90,10 @@ public class terminal extends JFrame {
                 BufferedReader br = new BufferedReader(new FileReader(configFile));
                 username = br.readLine();
                 br.close();
-                if (username == null || username.isBlank()) username = "User";
+
+                if (username == null || username.trim().isEmpty()) {
+                    username = "User";
+                }
             }
 
         } catch (Exception e) {
