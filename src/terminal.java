@@ -1,80 +1,110 @@
 import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 
 public class terminal extends JFrame {
 
-    private JTextArea outputArea;
+    private JTextPane outputPane;
     private JTextField inputField;
+
+    private SimpleAttributeSet outputStyle;
+    private SimpleAttributeSet errorStyle;
+    private SimpleAttributeSet inputStyle;
 
     public terminal() {
         setTitle("J9 Terminal");
-        setSize(700, 500);
+        setSize(800, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Layout
-        outputArea = new JTextArea();
-        outputArea.setEditable(false);
-        outputArea.setFont(new Font("Consolas", Font.PLAIN, 14));
+        // ---- Styles ----
+        outputStyle = new SimpleAttributeSet();
+        StyleConstants.setForeground(outputStyle, Color.GREEN);
+        StyleConstants.setFontFamily(outputStyle, "Consolas");
+        StyleConstants.setFontSize(outputStyle, 14);
 
-        JScrollPane scroll = new JScrollPane(outputArea);
+        errorStyle = new SimpleAttributeSet();
+        StyleConstants.setForeground(errorStyle, Color.RED);
+        StyleConstants.setFontFamily(errorStyle, "Consolas");
+        StyleConstants.setFontSize(errorStyle, 14);
 
+        inputStyle = new SimpleAttributeSet();
+        StyleConstants.setForeground(inputStyle, Color.GREEN);
+        StyleConstants.setFontFamily(inputStyle, "Consolas");
+        StyleConstants.setFontSize(inputStyle, 14);
+
+        // ---- Terminal Output Panel ----
+        outputPane = new JTextPane();
+        outputPane.setEditable(false);
+        outputPane.setBackground(Color.BLACK);
+        outputPane.setCaretColor(Color.GREEN);  // blinking cursor
+        outputPane.setFont(new Font("Consolas", Font.PLAIN, 14));
+
+        JScrollPane scrollPane = new JScrollPane(outputPane);
+
+        // ---- Input Field ----
         inputField = new JTextField();
         inputField.setFont(new Font("Consolas", Font.PLAIN, 14));
+        inputField.setBackground(Color.BLACK);
+        inputField.setForeground(Color.GREEN);
+        inputField.setCaretColor(Color.GREEN);   // cursor color
 
-        // Handle commands
-        inputField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String cmd = inputField.getText().trim();
-                inputField.setText("");
-                runCommand(cmd);
-            }
+        // Box cursor (fake) by drawing a custom border
+        inputField.setBorder(BorderFactory.createLineBorder(new Color(0, 255, 0), 1));
+
+        // Handle Enter key
+        inputField.addActionListener(e -> {
+            String cmd = inputField.getText().trim();
+            inputField.setText("");
+            addText("J9> " + cmd + "\n", outputStyle);
+            runCommand(cmd);
         });
 
-        add(scroll, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
         add(inputField, BorderLayout.SOUTH);
 
-        print("=== J9 Terminal GUI ===");
-        print("Type commands below. Type 'exit' to close.");
+        addText("=== J9 Terminal (GUI CMD-Style) ===\n", outputStyle);
+        addText("Type commands. Type 'exit' to quit.\n\n", outputStyle);
     }
 
-    private void print(String msg) {
-        outputArea.append(msg + "\n");
-        outputArea.setCaretPosition(outputArea.getDocument().getLength());
+    private void addText(String text, AttributeSet style) {
+        try {
+            StyledDocument doc = outputPane.getStyledDocument();
+            doc.insertString(doc.getLength(), text, style);
+            outputPane.setCaretPosition(doc.getLength());
+        } catch (Exception ignored) {}
     }
 
     private void runCommand(String cmd) {
-        print("J9> " + cmd);
 
         if (cmd.equalsIgnoreCase("exit")) {
-            print("Closing terminal...");
+            addText("\nClosing terminal...\n", outputStyle);
             System.exit(0);
         }
 
         try {
             Process process = Runtime.getRuntime().exec(cmd);
 
-            BufferedReader stdOut = new BufferedReader(
+            BufferedReader stdout = new BufferedReader(
                     new InputStreamReader(process.getInputStream()));
 
-            BufferedReader stdErr = new BufferedReader(
+            BufferedReader stderr = new BufferedReader(
                     new InputStreamReader(process.getErrorStream()));
 
-            // Output normal text
             String line;
-            while ((line = stdOut.readLine()) != null) {
-                print(line);
+
+            while ((line = stdout.readLine()) != null) {
+                addText(line + "\n", outputStyle);
             }
 
-            // Output errors
-            while ((line = stdErr.readLine()) != null) {
-                print("ERR: " + line);
+            while ((line = stderr.readLine()) != null) {
+                addText("ERR: " + line + "\n", errorStyle);
             }
 
-        } catch (Exception e) {
-            print("Error: " + e.getMessage());
+        } catch (IOException e) {
+            addText("Error: " + e.getMessage() + "\n", errorStyle);
         }
     }
 
