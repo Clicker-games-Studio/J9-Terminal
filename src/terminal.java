@@ -18,7 +18,6 @@ public class terminal extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // UI Colors
         Color bg = Color.black;
         Color fg = Color.white;
         Font font = new Font("Consolas", Font.PLAIN, 16);
@@ -37,7 +36,6 @@ public class terminal extends JFrame {
         inputField.setCaretColor(fg);
         inputField.setFont(font);
 
-        // Load or ask for username
         loadOrCreateUser();
 
         inputField.addActionListener(e -> {
@@ -62,7 +60,8 @@ public class terminal extends JFrame {
     }
 
     private void printPrompt() {
-        print(username + "@j9:~$ ");
+        outputArea.append(username + "@j9:~$ ");
+        outputArea.setCaretPosition(outputArea.getDocument().getLength());
     }
 
     private void loadOrCreateUser() {
@@ -104,7 +103,8 @@ public class terminal extends JFrame {
 
     private void processCommand(String cmd) {
 
-        print(username + "@j9:~$ " + cmd);
+        // Show only user command (NO extra prompt)
+        print(cmd);
 
         switch (cmd.toLowerCase()) {
             case "help":
