@@ -12,7 +12,12 @@ public class terminal extends JFrame {
     private SimpleAttributeSet normalStyle;
     private SimpleAttributeSet errorStyle;
 
+    private String userName;
+
     public terminal() {
+
+        loadUserName();  // Load or ask for username
+
         setTitle("J9 Terminal");
         setSize(800, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -45,10 +50,8 @@ public class terminal extends JFrame {
         inputField.setForeground(Color.WHITE);
         inputField.setCaretColor(Color.WHITE);
 
-        // Simple border like CMD
         inputField.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 60, 60)));
 
-        // Handle Enter key
         inputField.addActionListener(e -> {
             String cmd = inputField.getText().trim();
             inputField.setText("");
@@ -60,7 +63,37 @@ public class terminal extends JFrame {
         add(inputField, BorderLayout.SOUTH);
 
         addText("J9 Terminal\n", normalStyle);
-        addText("-----------------------\n\n", normalStyle);
+        addText("----------------------\n", normalStyle);
+        addText("Welcome back, " + userName + "!\n\n", normalStyle);
+    }
+
+    // Load username from %appdata%\J9 Terminal
+    private void loadUserName() {
+        try {
+            String appData = System.getenv("APPDATA");
+            File dir = new File(appData + "\\J9 Terminal");
+            if (!dir.exists()) dir.mkdirs();
+
+            File file = new File(dir, "username.txt");
+
+            if (file.exists()) {
+                BufferedReader br = new BufferedReader(new FileReader(file));
+                userName = br.readLine();
+                br.close();
+            } else {
+                userName = JOptionPane.showInputDialog(this, "Enter your name:", "J9 Terminal Setup", JOptionPane.PLAIN_MESSAGE);
+
+                if (userName == null || userName.trim().isEmpty())
+                    userName = "User";
+
+                FileWriter fw = new FileWriter(file);
+                fw.write(userName);
+                fw.close();
+            }
+
+        } catch (Exception e) {
+            userName = "User";
+        }
     }
 
     private void addText(String text, AttributeSet style) {
