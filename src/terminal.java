@@ -1,158 +1,141 @@
 import javax.swing.*;
-import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 
 public class terminal extends JFrame {
 
-    private JTextPane outputPane;
+    private JTextArea outputArea;
     private JTextField inputField;
 
-    private SimpleAttributeSet normalStyle;
-    private SimpleAttributeSet errorStyle;
-
-    private String userName;
+    private String username = "User";
+    private File configFolder;
+    private File configFile;
 
     public terminal() {
-
-        loadUserName();  // Load or ask for username
-
         setTitle("J9 Terminal");
         setSize(800, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // ---- Styles ----
-        normalStyle = new SimpleAttributeSet();
-        StyleConstants.setForeground(normalStyle, Color.WHITE);
-        StyleConstants.setFontFamily(normalStyle, "Consolas");
-        StyleConstants.setFontSize(normalStyle, 14);
+        // UI Colors
+        Color bg = Color.black;
+        Color fg = Color.white;
+        Font font = new Font("Consolas", Font.PLAIN, 16);
 
-        errorStyle = new SimpleAttributeSet();
-        StyleConstants.setForeground(errorStyle, new Color(255, 120, 120));
-        StyleConstants.setFontFamily(errorStyle, "Consolas");
-        StyleConstants.setFontSize(errorStyle, 14);
+        outputArea = new JTextArea();
+        outputArea.setEditable(false);
+        outputArea.setBackground(bg);
+        outputArea.setForeground(fg);
+        outputArea.setFont(font);
 
-        // ---- Terminal Output Panel ----
-        outputPane = new JTextPane();
-        outputPane.setEditable(false);
-        outputPane.setBackground(Color.BLACK);
-        outputPane.setCaretColor(Color.WHITE);
-        outputPane.setFont(new Font("Consolas", Font.PLAIN, 14));
+        JScrollPane scroll = new JScrollPane(outputArea);
 
-        JScrollPane scrollPane = new JScrollPane(outputPane);
-
-        // ---- Input Field ----
         inputField = new JTextField();
-        inputField.setFont(new Font("Consolas", Font.PLAIN, 14));
-        inputField.setBackground(Color.BLACK);
-        inputField.setForeground(Color.WHITE);
-        inputField.setCaretColor(Color.WHITE);
+        inputField.setBackground(bg);
+        inputField.setForeground(fg);
+        inputField.setCaretColor(fg);
+        inputField.setFont(font);
 
-        inputField.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(60, 60, 60)));
+        // Load username or ask
+        loadOrCreateUser();
 
-        // Handle Enter key
+        // Enter key = process command
         inputField.addActionListener(e -> {
             String cmd = inputField.getText().trim();
             inputField.setText("");
-
-            String prompt = userName + "@j9:~$ ";
-            addText(prompt + cmd + "\n", normalStyle);
-
-            runCommand(cmd);
-
-            // print prompt again after command finishes
-            addText(prompt, normalStyle);
+            processCommand(cmd);
         });
 
-        add(scrollPane, BorderLayout.CENTER);
+        add(scroll, BorderLayout.CENTER);
         add(inputField, BorderLayout.SOUTH);
 
-        addText("J9 Terminal\n", normalStyle);
-        addText("----------------------\n", normalStyle);
-        addText("Welcome back, " + userName + "!\n\n", normalStyle);
-
-        // Initial prompt
-        addText(userName + "@j9:~$ ", normalStyle);
+        // Intro
+        print("J9 Terminal");
+        print("----------------------");
+        print("Welcome back, " + username + "!");
+        print("");
+        printPrompt();
     }
 
-    // Load username from %appdata%\J9 Terminal
-    private void loadUserName() {
+    private void print(String msg) {
+        outputArea.append(msg + "\n");
+        outputArea.setCaretPosition(outputArea.getDocument().getLength());
+    }
+
+    private void printPrompt() {
+        print(username + "@j9:~$ ");
+    }
+
+    private void loadOrCreateUser() {
+        String appdata = System.getenv("APPDATA");
+        configFolder = new File(appdata + "\\J9 Terminal");
+        configFile = new File(configFolder, "config.txt");
+
         try {
-            String appData = System.getenv("APPDATA");
-            File dir = new File(appData + "\\J9 Terminal");
-            if (!dir.exists()) dir.mkdirs();
+            if (!configFolder.exists()) {
+                configFolder.mkdirs();
+            }
 
-            File file = new File(dir, "username.txt");
+            if (!configFile.exists()) {
+                // Ask for username
+                username = JOptionPane.showInputDialog(null,
+                        "Enter your username:",
+                        "J9 Terminal Setup",
+                        JOptionPane.QUESTION_MESSAGE);
 
-            if (file.exists()) {
-                BufferedReader br = new BufferedReader(new FileReader(file));
-                userName = br.readLine();
-                br.close();
-            } else {
-                userName = JOptionPane.showInputDialog(this, "Enter your name:", "J9 Terminal Setup", JOptionPane.PLAIN_MESSAGE);
+                if (username == null || username.isBlank()) {
+                    username = "User";
+                }
 
-                if (userName == null || userName.trim().isEmpty())
-                    userName = "user";
-
-                FileWriter fw = new FileWriter(file);
-                fw.write(userName);
+                FileWriter fw = new FileWriter(configFile);
+                fw.write(username);
                 fw.close();
+            } else {
+                BufferedReader br = new BufferedReader(new FileReader(configFile));
+                username = br.readLine();
+                br.close();
+                if (username == null || username.isBlank()) username = "User";
             }
 
         } catch (Exception e) {
-            userName = "user";
+            e.printStackTrace();
+            username = "User";
         }
     }
 
-    private void addText(String text, AttributeSet style) {
-        try {
-            StyledDocument doc = outputPane.getStyledDocument();
-            doc.insertString(doc.getLength(), text, style);
-            outputPane.setCaretPosition(doc.getLength());
-        } catch (Exception ignored) {}
-    }
+    private void processCommand(String cmd) {
 
-    private void runCommand(String cmd) {
+        print(username + "@j9:~$ " + cmd);
 
-        if (cmd.equalsIgnoreCase("exit")) {
-            addText("\nExiting...\n", normalStyle);
-            System.exit(0);
+        switch (cmd.toLowerCase()) {
+            case "help":
+                print("J9 Terminal Commands:");
+                print("  help      - Show this help");
+                print("  clear     - Clear the screen");
+                print("  exit      - Close J9 Terminal");
+                break;
+
+            case "clear":
+                outputArea.setText("");
+                break;
+
+            case "exit":
+                System.exit(0);
+                break;
+
+            case "":
+                break;
+
+            default:
+                print("Unknown command: " + cmd);
+                break;
         }
 
-        if (cmd.equalsIgnoreCase("clear") || cmd.equalsIgnoreCase("cls")) {
-            outputPane.setText("");
-            return;
-        }
-
-        try {
-            Process process = Runtime.getRuntime().exec(cmd);
-
-            BufferedReader stdout = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-
-            BufferedReader stderr = new BufferedReader(
-                    new InputStreamReader(process.getErrorStream()));
-
-            String line;
-
-            while ((line = stdout.readLine()) != null) {
-                addText(line + "\n", normalStyle);
-            }
-
-            while ((line = stderr.readLine()) != null) {
-                addText(line + "\n", errorStyle);
-            }
-
-        } catch (IOException e) {
-            addText("Command not found: " + cmd + "\n", errorStyle);
-        }
+        printPrompt();
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new terminal().setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new terminal().setVisible(true));
     }
 }
